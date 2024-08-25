@@ -14,7 +14,6 @@ export class CreateUserDto extends BaseDto {
     description: 'unique, email is used to login',
   })
   @IsNotEmpty({message: 'EMAIL_IS_REQUIRED'})
-  @Matches('/^[a-zA-Z0-9@]{6,20}$/')
   email: string;
 
   @ApiProperty({ example: '123456', description: 'password used to login' })

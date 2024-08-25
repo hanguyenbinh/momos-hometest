@@ -23,7 +23,7 @@ export class GoodsService {
             orderBy[filters.order] = 0 == filters.sort ? "asc" : "desc"
         }
         if (isNotEmpty(filters.name)){
-            where.customer.name = {
+            where.name = {
                 contains: filters.name
             }
         }

@@ -18,6 +18,9 @@ export class AuthService {
 
     private prismaService: PrismaService,
   ) { }
+  async getUsers(){
+    return this.prismaService.user.findMany();
+  }
 
   async register(input: CreateUserDto) {
     const user = await this.prismaService.user.findUnique({

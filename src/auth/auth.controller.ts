@@ -12,6 +12,10 @@ import { CreateUserDto } from 'src/dtos/create-user.dto';
 @ApiBearerAuth()
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+  @Get()
+  async getUsers(){
+    return this.authService.getUsers();
+  }
   @Get('current-user')
   async getCurrentUser(@CurrentUser() user){
     return new HttpResult({

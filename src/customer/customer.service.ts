@@ -8,6 +8,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 interface CustomerFilters extends FiltersInterface {
     name: string;
+    phone: string
 }
 
 @Injectable()
@@ -23,10 +24,15 @@ export class CustomerService {
             orderBy[filters.order] = 0 == filters.sort ? "asc" : "desc"
         }
         if (isNotEmpty(filters.name)){
-            where.customer.name = {
+            where.name = {
                 contains: filters.name
             }
         }   
+        if (isNotEmpty(filters.phone)){
+            where.phone = {
+                contains: filters.phone
+            }
+        }  
         const result = await this.prismaService.customer.findMany({
             skip,
             take,

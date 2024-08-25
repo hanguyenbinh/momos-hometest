@@ -1,7 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseDto } from './base.dto';
 import { IsArray, IsNotEmpty, IsPositive, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
+class OrderItemInterface {
+  id: number
+  quantity: number
+}
 
 export class CreateOrderDto extends BaseDto {
   @ApiProperty({
@@ -14,9 +19,10 @@ export class CreateOrderDto extends BaseDto {
   customerId: number
 
   @ApiProperty({
-    example: [1,2,3],
+    example: [{id: 1, quantity: 1},{id: 2, quantity: 2}],
     description: 'goods id array, min size = 1'
   })
   @IsArray()
-  items: number[];
+  @Type(()=> OrderItemInterface)
+  items: OrderItemInterface[];
 }

@@ -22,56 +22,58 @@ enum OrderStatus {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  email       String   @unique
-  password    String
-  firstName   String?
-  lastName    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  firstName String?
+  lastName  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model Customer {
-  id          Int      @id @default(autoincrement())
-  name        String
-  phone       String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  id        Int       @id @default(autoincrement())
+  name      String
+  phone     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-  orders      Order[]
+  orders Order[]
 }
 
 model Goods {
-  id          Int             @id   @default(autoincrement())
-  name        String
-  quantity    Int             @default(0)
-  unitPrice   Decimal         @db.Decimal(10, 2)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  deletedAt   DateTime?
+  id        Int       @id @default(autoincrement())
+  name      String
+  quantity  Int       @default(0)
+  unitPrice Decimal   @db.Decimal(10, 2)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-  orders     GoodsInOrders[]
+  orders GoodsInOrders[]
 }
 
 model Order {
-  id          Int         @id @default(autoincrement())
-  customerId  Int
-  status      OrderStatus @default(CREATED)
-  total       Decimal     @db.Decimal(10, 2)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  deletedAt   DateTime?
+  id         Int         @id @default(autoincrement())
+  customerId Int
+  status     OrderStatus @default(CREATED)
+  total      Decimal     @db.Decimal(10, 2)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  deletedAt  DateTime?
 
-  goods     GoodsInOrders[]
-  customer    Customer    @relation(fields: [customerId], references: [id])
+  items    GoodsInOrders[]
+  customer Customer        @relation(fields: [customerId], references: [id])
 }
 
-model GoodsInOrders {  
-  goodsId     Int
-  goods       Goods     @relation(fields: [goodsId], references: [id])
-  orderId     Int
-  order       Order     @relation(fields: [orderId], references: [id])
+model GoodsInOrders {
+  goodsId   Int
+  goods     Goods @relation(fields: [goodsId], references: [id])
+  orderId   Int
+  order     Order @relation(fields: [orderId], references: [id])
+  quantity  Int
+
   @@id([goodsId, orderId])
 }

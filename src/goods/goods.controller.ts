@@ -5,7 +5,7 @@ import { CreateGoodsDto } from 'src/dtos/create-goods.dto';
 
 
 @Controller('goods')
-@ApiTags('GOODS')
+@ApiTags('Goods')
 @ApiBearerAuth()
 export class GoodsController {
     constructor(private service: GoodsService){}

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { contains, isEmpty, isNotEmpty, isNumber } from 'class-validator';
+import { isEmpty, isNotEmpty, isNumber } from 'class-validator';
 import { OrderStatusEnum } from 'src/common/enum/order-status.enum';
 import { HttpResult } from 'src/common/http/http-result.http';
 import { FiltersInterface } from 'src/common/interface/filters.interface';
@@ -17,37 +17,37 @@ interface OrderFilters extends FiltersInterface {
 
 @Injectable()
 export class OrderService {
-    constructor(private prismaService: PrismaService){}
+    constructor(private prismaService: PrismaService) { }
 
-    async getOrders(filters: OrderFilters){
+    async getOrders(filters: OrderFilters) {
         const take = !Number.isNaN(filters.limit) ? filters.limit : 10;
-        const skip = ((!Number.isNaN(filters.page) || filters.page > 0 ? filters.page : 1) - 1) * take;        
+        const skip = ((!Number.isNaN(filters.page) || filters.page > 0 ? filters.page : 1) - 1) * take;
         const orderBy = {};
         const where: any = {}
         if (filters.order) {
             orderBy[filters.order] = 0 == filters.sort ? "asc" : "desc"
         }
-        if (isNotEmpty(filters.customerName)){
+        if (isNotEmpty(filters.customerName)) {
             where.customer.name = {
                 contains: filters.customerName
             }
         }
-        if (isNotEmpty(filters.customerPhone)){
+        if (isNotEmpty(filters.customerPhone)) {
             where.customer.phone = {
                 contains: filters.customerPhone
             }
         }
-        if (isNotEmpty(filters.minTotal) && isNumber(filters.minTotal)){
+        if (isNotEmpty(filters.minTotal) && isNumber(filters.minTotal)) {
             where.total = {
                 gte: filters.minTotal
             }
         }
-        if (isNotEmpty(filters.maxTotal) && isNumber(filters.maxTotal)){
+        if (isNotEmpty(filters.maxTotal) && isNumber(filters.maxTotal)) {
             where.total = {
                 lte: filters.maxTotal
             }
         }
-        if (isNotEmpty(filters.status)){
+        if (isNotEmpty(filters.status)) {
             where.status = {
                 equals: filters.status
             }
@@ -64,7 +64,7 @@ export class OrderService {
         })
     }
 
-    async getOrder(id: number){
+    async getOrder(id: number) {
         const order = await this.prismaService.order.findUnique({
             where: {
                 id
@@ -80,31 +80,72 @@ export class OrderService {
         })
     }
 
-    async createOrder(input: CreateOrderDto){
+    async createOrder(input: CreateOrderDto) {
         const goods = await this.prismaService.goods.findMany({
             where: {
                 id: {
-                    in: input.items
+                    in: input.items.map(item => item.id)
                 }
             }
         })
-        if (isEmpty(goods) || goods.length == 0){
+        if (isEmpty(goods) || goods.length == 0) {
             return new HttpResult({
                 status: false,
                 message: 'ITEMS_NOT_EXIST'
             })
         }
         let total = 0;
+        let quantityChecking = true;
+        const updateGoodsJobs = [];
         goods.forEach(item => {
-            total += parseFloat(item.unitPrice) /// need to findout why prisma store decimal type as string
+            const found = input.items.find(elem => elem.id == item.id)
+            if (found.quantity > item.quantity) {
+                quantityChecking = false;
+                return;
+            }
+
+            updateGoodsJobs.push(this.prismaService.goods.update({
+                where: {
+                    id: item.id
+                },
+                data: {
+                    quantity: item.quantity - found.quantity
+                }
+            }))
+            total += parseFloat(item.unitPrice.toString()) /// need to findout why prisma store decimal type as string
         });
-        const order = await this.prismaService.order.create({
-            data: {...input, total}
-        })
+        
+        if (!quantityChecking) {
+            return new HttpResult({
+                status: false,
+                message: "ITEM_QUANTITY_IS_INCORRECT"
+            })
+        }
+        updateGoodsJobs.push( this.prismaService.order.create({
+            data: {
+                customerId: input.customerId,
+                total,
+                items: {
+                    create: input.items.map(item=>{
+                        return{
+                            goods:{
+                                connect: {
+                                    id: item.id
+                                }
+                            },
+                            quantity: item.quantity
+                        }
+                    })
+                }
+
+            }
+        }))
+        const result = await this.prismaService.$transaction(updateGoodsJobs);
+        
         return new HttpResult({
             status: true,
             message: 'CREATE_ORDER_SUCCESS',
-            data: {order}
+            data: {  order: result.pop()}
         })
     }
 }
