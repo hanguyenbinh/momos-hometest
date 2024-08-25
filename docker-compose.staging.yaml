@@ -1,0 +1,41 @@
+version: "3"
+
+services:
+    hometest_backend:
+        build:
+            context: .
+        ports:
+            - 3000:3000
+        environment:
+            - NODE_ENV=development            
+            - POSTGRESQL_HOST=hometest_db
+            - POSTGRESQL_PORT=5432
+            - POSTGRESQL_PASSWORD=123456
+            - POSTGRESQL_USERNAME=hometest_user
+            - hometest_db=hometest
+        volumes:
+            - .:/home/node/app
+            
+        networks:
+            - hometest_backend_network
+        links:
+            - database
+    hometest_db:
+        image: 'bitnami/postgresql:11'
+        ports:
+            - 5432:5432
+        restart: always
+        volumes:
+            - postgresql_data:/bitnami/postgresql
+            - ./database:/docker-entrypoint-initdb.d/create-db.sql
+        environment:
+            - POSTGRESQL_PASSWORD=123456
+            - POSTGRESQL_USERNAME=hometest_user
+            - POSTGRESQL_DATABASE=hometest_db
+        networks:
+            - hometest_backend_network
+volumes:
+    postgresql_data:
+        driver: local
+networks:
+    hometest_backend_network:

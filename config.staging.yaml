@@ -1,0 +1,103 @@
+server:
+  host: 0.0.0.0
+  port: 3000
+  globalPrefix: "/api"
+  enableOpenAPI: true
+  defaultDateTimeFormat: "YYYY-MM-DD HH:mm:ss"
+  defaultTimeFormat: "HH:mm:ss"
+  defautDateFormat: "YYYY-MM-DD"  
+  enableLogs: true
+  logDir: ./logs
+  pageSize: 20
+database:
+  type: postgres
+  host: localhost
+  port: 5432
+  username: hometest_user
+  password: "123456"
+  database: hometest_db
+  synchronize: false
+  migrationsRun: false
+  logging: true
+  entities: ["./dist/**/**/**.entity.{ts,js}"]
+  migrations: ["./dist/migrations/*.ts"]
+  cli:
+    migrationsDir: ./migrations
+  extra:
+    poolSize: 40
+    connectionTimeoutMillis: 10000
+    query_timeout: 2000
+    statement_timeout: 2000
+jwt:
+  signOptions:
+    expiresIn: "7 days"
+    algorithm: RS256    
+  privateKey: |-
+    -----BEGIN RSA PRIVATE KEY-----
+    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
+    -----END RSA PRIVATE KEY-----
+  publicKey: |-
+    -----BEGIN PUBLIC KEY-----
+    MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAwCQWeuCEEzwhhfjobHlz
+    gSguBlN7St9E3amFov7TgEApNQzi7iNRVFB6IVhhLD0fMg+/19vAloJpxF3nRZDy
+    fFX2Fa4Vhk6bCYT060/d9nyIt0FOqLpQNPf5F4vUSBEDcRNeUuI391Zl+Dw60j7x
+    iYWUczUF3CDIIY2/6yo503QgQDxHDnfH4zDp5e/9CVI6X7ED1u8U7lJY4kEcaYUr
+    hN8GuMA0T/gR7DZQK7LIHiWvk3mPcVTYi+VoxTQzLkpFHn5ZasDBAwWaHuREtUaL
+    8n6GpBny9XR3wQL6hS6WGkO4HCIdTEZqxGoWrGpVpp1lHIxgvPGoBCdT6XgThOBl
+    leJ+/BdNiQVrh+b/FjQpBP4AHoduq2jfpQ9ij8AyF1tGNBVieDZRilLFz8WtJsbb
+    6NoE5J06ISaklaRESVvOzh86uE+sKkAFomly9B2CwJ9up5YPkyV/ac01pk/lVWOV
+    BNAXiviPQOe+MF+1EdzFXpk/Ve5z+pdrx0ZEQi2xei9iWm5hPc43keSJuDm08R6i
+    xYMLVMP9FhUXoY+avx2+XNbgALEk6kYcS43MgPRhGUanI+mJ+34tprQQ1u45lpww
+    hL7sp/t34hpz/CsHu4H8qZF3ycIRyBS9BzRDwY0owik1u1uWLT3WaE4QmTagT7Vh
+    dO2KwNVD1zoKafebnFRGL0ECAwEAAQ==
+    -----END PUBLIC KEY-----
+  verifyOptions:
+    algorithms: [RS256]
