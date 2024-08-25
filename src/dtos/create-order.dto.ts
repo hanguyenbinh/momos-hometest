@@ -3,7 +3,7 @@ import { BaseDto } from './base.dto';
 import { IsArray, IsNotEmpty, IsPositive, Min } from 'class-validator';
 
 
-export class CreateBodyRecordDto extends BaseDto {
+export class CreateOrderDto extends BaseDto {
   @ApiProperty({
     example: 1,
     description: 'customer id, can not be null'

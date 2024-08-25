@@ -6,17 +6,61 @@ import configuration from './config/configuration';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { ValidationError, useContainer } from 'class-validator';
+import { ValidationPipe } from '@nestjs/common';
+import { iterate } from 'iterare';
+import { mapChildrenToValidationErrors } from './common/utils/validation.utils';
+import { InvalidInputException } from './common/exceptions/invalid-input.exception';
 
 async function bootstrap() {
   const appConfig = configuration() as any;
+  const typeormConfig = appConfig.database;
+  if (process.env.POSTGRESQL_HOST) {
+    typeormConfig.host = process.env.POSTGRESQL_HOST;
+  }
+  if (process.env.POSTGRESQL_PORT) {
+    typeormConfig.port = process.env.POSTGRESQL_PORT;
+  }
+  if (process.env.POSTGRESQL_USER) {
+    typeormConfig.username = process.env.POSTGRESQL_USER;
+  }
+  if (process.env.POSTGRESQL_PASSWORD) {
+    typeormConfig.password = process.env.POSTGRESQL_PASSWORD;
+  }
+  if (process.env.POSTGRESQL_DATABASE) {
+    typeormConfig.database = process.env.POSTGRESQL_DATABASE;
+  }
+  process.env['DATABASE_URL'] = `postgres://${typeormConfig.username}:${typeormConfig.password}@${typeormConfig.host}:${typeormConfig.port}/${typeormConfig.database}`;
+  
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  useContainer(app.select(AppModule), { fallbackOnErrors: true });
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      // disableErrorMessages: true,
+      exceptionFactory: (validationErrors: ValidationError[] = []) => {
+        const errors = iterate(validationErrors)
+          .map((error) => mapChildrenToValidationErrors(error))
+          .flatten()
+          .filter((item) => !!item.constraints)
+          .map((item) => Object.values(item.constraints))
+          .flatten()
+          .toArray();
+        return new InvalidInputException(
+          errors.length > 0 ? (errors[0] as string) : '',
+        );
+      },
+    }),
+  );
   app.useGlobalFilters(new AllExceptionsFilter());
   app.enableCors();
   const reflector = app.get(Reflector);
   app.useGlobalGuards(new JwtAuthGuard(reflector, appConfig),);
   if (appConfig.server.enableOpenAPI === true) {
     const options = new DocumentBuilder()
-      .addBearerAuth()      
+      .addBearerAuth()
       .setTitle('Home test system - API')
       .setDescription('by hanguyenbinh201282@gmail.com')
       .setVersion('1.0')

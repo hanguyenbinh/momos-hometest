@@ -16,7 +16,7 @@ export class AuthController {
   async getCurrentUser(@CurrentUser() user){
     return new HttpResult({
       status: true,
-      data: user
+      data: {...user, password: null}
     });
   }
   @AllowUnauthorized()

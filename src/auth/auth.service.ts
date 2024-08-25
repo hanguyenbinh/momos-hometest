@@ -1,17 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
 import { HttpResult } from 'src/common/http/http-result.http';
-import {  
-  Repository,
-} from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-
-import { isArray } from 'class-validator';
-import { UserEntity } from 'src/entities/user.entity';
 import { UserLoginDto } from 'src/dtos/user-login.dto';
 import { CreateUserDto } from 'src/dtos/create-user.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 
 
@@ -22,12 +16,11 @@ export class AuthService {
     private configService: ConfigService,
     private logger: Logger,
 
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
+    private prismaService: PrismaService,
   ) { }
 
   async register(input: CreateUserDto) {
-    const user = await this.userRepository.findOne({
+    const user = await this.prismaService.user.findUnique({
       where: {
         email: input.email,
       },
@@ -37,10 +30,10 @@ export class AuthService {
         status: false,
         message: 'EMAIL_IS_ALREADY_USED',
       });
-    }
-    input.createdAt = new Date();
-    const newUser = this.userRepository.create(input);
-    const result = await this.userRepository.save(newUser);
+    }    
+    input.createdAt = new Date();    
+    input.password = await bcrypt.hash(input.password, 10);
+    const result = await this.prismaService.user.create({data: input});
 
     return new HttpResult({
       message: 'REGISTER_SUCCESS',
@@ -49,10 +42,14 @@ export class AuthService {
   }
 
   async login(input: UserLoginDto) {
-    const user = await this.userRepository.findOne(
+    const user = await this.prismaService.user.findUnique(
       {
         where: { email: input.email },
-        select: ['id', 'email', 'password'],
+        select: {
+          id: true,
+          email: true,
+          password: true
+        },
       }
 
     )
@@ -114,9 +111,13 @@ export class AuthService {
   async validate(id: number) {
 
     try {
-      const user: any = await this.userRepository.findOne({
+      const user: any = await this.prismaService.user.findUnique({
         where: { id },
-        select: ['id', 'email', 'password'],
+        select: {
+          id: true,
+          email: true,
+          password: true
+        },
       }
       );
 

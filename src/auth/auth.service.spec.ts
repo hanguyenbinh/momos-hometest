@@ -5,8 +5,6 @@ import { PassportModule } from '@nestjs/passport';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import configuration from 'src/config/configuration';
-import { Company } from 'src/entities/company.entity';
-import { User } from 'src/entities/user.entity';
 import { Connection } from 'typeorm';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategy/jwt.strategy';

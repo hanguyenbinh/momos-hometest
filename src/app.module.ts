@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
-import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthModule } from './auth/auth.module';
+import { GoodsModule } from './goods/goods.module';
+import { OrderService } from './order/order.service';
+import { OrderModule } from './order/order.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { CustomerModule } from './customer/customer.module';
 
 
 @Module({
@@ -14,34 +18,14 @@ import { AuthModule } from './auth/auth.module';
       isGlobal: true,
       cache: true,
       load: [configuration],
-    }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const typeormConfig = configService.get('database');
-        if (process.env.POSTGRESQL_HOST) {
-          typeormConfig.host = process.env.POSTGRESQL_HOST;
-        }
-        if (process.env.POSTGRESQL_PORT) {
-          typeormConfig.port = process.env.POSTGRESQL_PORT;
-        }
-        if (process.env.POSTGRESQL_USER) {
-          typeormConfig.username = process.env.POSTGRESQL_USER;
-        }
-        if (process.env.POSTGRESQL_PASSWORD) {
-          typeormConfig.password = process.env.POSTGRESQL_PASSWORD;
-        }
-        if (process.env.POSTGRESQL_DATABASE) {
-          typeormConfig.database = process.env.POSTGRESQL_DATABASE;
-        }
-        console.log(typeormConfig)
-        return typeormConfig;
-      },
-    }),
-    AuthModule
+    }),    
+    AuthModule,
+    GoodsModule,
+    OrderModule,
+    PrismaModule,
+    CustomerModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, OrderService],
 })
 export class AppModule {}
