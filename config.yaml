@@ -30,7 +30,7 @@ database:
     statement_timeout: 2000
 jwt:
   signOptions:
-    expiresIn: "7 days"
+    expiresIn: "7d"
     algorithm: RS256    
   privateKey: |-
     -----BEGIN RSA PRIVATE KEY-----

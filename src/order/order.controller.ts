@@ -17,7 +17,7 @@ export class OrderController {
     @ApiQuery({ name: 'maxTotal', required: false, type: String, example: 100 })
     @ApiQuery({ name: 'status', required: false, type: String, example: OrderStatusEnum.CREATED })
     @ApiQuery({ name: 'order', required: false, type: String, example: '' })    
-    @ApiQuery({ name: 'sort', required: false, type: Number, example: 1})    
+    @ApiQuery({ name: 'sort', required: false, type: String, example: 'asc'})
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     async getOrders(
@@ -27,7 +27,7 @@ export class OrderController {
         @Query('maxTotal') maxTotal: number,
         @Query('status') status: OrderStatusEnum,
         @Query('order') order: string = '',
-        @Query('sort') sort: number = 0,
+        @Query('sort') sort: string = 'asc',
         @Query('page') page: number = 1,
         @Query('limit') limit: number = 10,        
     ){

@@ -5,6 +5,8 @@ import { HttpResult } from 'src/common/http/http-result.http';
 import { FiltersInterface } from 'src/common/interface/filters.interface';
 import { CreateOrderDto } from 'src/dtos/create-order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Prisma } from '@prisma/client'
+
 
 
 interface OrderFilters extends FiltersInterface {
@@ -20,12 +22,23 @@ export class OrderService {
     constructor(private prismaService: PrismaService) { }
 
     async getOrders(filters: OrderFilters) {
+        console.log(filters)
         const take = !Number.isNaN(filters.limit) ? filters.limit : 10;
         const skip = ((!Number.isNaN(filters.page) || filters.page > 0 ? filters.page : 1) - 1) * take;
-        const orderBy = {};
+        const orderBy: any = {};
         const where: any = {}
         if (filters.order) {
-            orderBy[filters.order] = 0 == filters.sort ? "asc" : "desc"
+            const sort = 'asc' == filters.sort ? "asc" : "desc";
+            if (filters.order == 'customerName') {
+                orderBy.customer = {
+                    name: sort
+                };
+            }
+            else if (filters.order == 'customerPhone') {
+                orderBy.customer = { phone: sort };
+            }
+            else
+                orderBy[filters.order] = 'asc' == filters.sort ? "asc" : "desc"
         }
         if (isNotEmpty(filters.customerName)) {
             where.customer.name = {
@@ -39,12 +52,15 @@ export class OrderService {
         }
         if (isNotEmpty(filters.minTotal) && isNumber(filters.minTotal)) {
             where.total = {
-                gte: filters.minTotal
+                gte: new Prisma.Decimal(filters.minTotal)
             }
         }
         if (isNotEmpty(filters.maxTotal) && isNumber(filters.maxTotal)) {
-            where.total = {
-                lte: filters.maxTotal
+            if (where.total){
+                where.total.lte = new Prisma.Decimal(filters.maxTotal)
+            }
+            else where.total = {
+                lte: new Prisma.Decimal(filters.maxTotal)
             }
         }
         if (isNotEmpty(filters.status)) {
@@ -52,15 +68,26 @@ export class OrderService {
                 equals: filters.status
             }
         }
-        const result = await this.prismaService.order.findMany({
+        console.log(where)
+        const [orders, count] = await this.prismaService.$transaction([this.prismaService.order.findMany({
+            include: {
+                customer: true,
+                items: {
+                    include: {
+                        goods: true
+                    }
+                }
+            },
             skip,
             take,
             orderBy,
             where
-        })
+        }),
+        this.prismaService.order.count()]);
+        const hasNextPage = count / take > filters.page
         return new HttpResult({
             message: 'GET_ORDER_SUCCESS',
-            data: result
+            data: { orders, count, hasNextPage },
         })
     }
 
@@ -97,12 +124,14 @@ export class OrderService {
         let total = 0;
         let quantityChecking = true;
         const updateGoodsJobs = [];
+        const goodsList = []
         goods.forEach(item => {
             const found = input.items.find(elem => elem.id == item.id)
             if (found.quantity > item.quantity) {
                 quantityChecking = false;
                 return;
             }
+            found.price = item.unitPrice;
 
             updateGoodsJobs.push(this.prismaService.goods.update({
                 where: {
@@ -112,28 +141,30 @@ export class OrderService {
                     quantity: item.quantity - found.quantity
                 }
             }))
+            goodsList.push(found);
             total += parseFloat(item.unitPrice.toString()) /// need to findout why prisma store decimal type as string
         });
-        
+
         if (!quantityChecking) {
             return new HttpResult({
                 status: false,
                 message: "ITEM_QUANTITY_IS_INCORRECT"
             })
         }
-        updateGoodsJobs.push( this.prismaService.order.create({
+        updateGoodsJobs.push(this.prismaService.order.create({
             data: {
                 customerId: input.customerId,
                 total,
                 items: {
-                    create: input.items.map(item=>{
-                        return{
-                            goods:{
+                    create: goodsList.map(item => {
+                        return {
+                            goods: {
                                 connect: {
                                     id: item.id
                                 }
                             },
-                            quantity: item.quantity
+                            quantity: item.quantity,
+                            price: item.price
                         }
                     })
                 }
@@ -141,11 +172,11 @@ export class OrderService {
             }
         }))
         const result = await this.prismaService.$transaction(updateGoodsJobs);
-        
+
         return new HttpResult({
             status: true,
             message: 'CREATE_ORDER_SUCCESS',
-            data: {  order: result.pop()}
+            data: { order: result.pop() }
         })
     }
 }

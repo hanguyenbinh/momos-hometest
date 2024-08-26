@@ -74,6 +74,7 @@ model GoodsInOrders {
   orderId   Int
   order     Order @relation(fields: [orderId], references: [id])
   quantity  Int
+  price     Decimal   @db.Decimal(10, 2)
 
   @@id([goodsId, orderId])
 }

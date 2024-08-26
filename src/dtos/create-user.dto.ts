@@ -19,4 +19,12 @@ export class CreateUserDto extends BaseDto {
   @ApiProperty({ example: '123456', description: 'password used to login' })
   @IsNotEmpty({message: 'PASSWORD_IS_REQUIRED'})
   password: string;
+
+  @ApiProperty({ example: '123456', description: 'firstname' })
+  @IsNotEmpty({message: 'FIRST_NAME_IS_REQUIRED'})
+  firstName: string;
+
+  @ApiProperty({ example: '123456', description: 'lastname' })
+  @IsNotEmpty({message: 'LAST_NAME_IS_REQUIRED'})
+  lastName: string;
 }

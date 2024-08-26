@@ -1,6 +1,6 @@
 export interface FiltersInterface {
     order: string;
-    sort: number;
+    sort: number|string;
     page: number;
     limit: number;
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { HttpResult } from 'src/common/http/http-result.http';
@@ -13,15 +13,33 @@ import { CreateUserDto } from 'src/dtos/create-user.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
   @Get()
-  async getUsers(){
-    return this.authService.getUsers();
-  }
-  @Get('current-user')
-  async getCurrentUser(@CurrentUser() user){
-    return new HttpResult({
-      status: true,
-      data: {...user, password: null}
+  @ApiQuery({ name: 'email', required: false, type: String, example: 'abc' })
+  @ApiQuery({ name: 'order', required: false, type: String, example: '' })    
+  @ApiQuery({ name: 'sort', required: false, type: String, example: 'asc'})    
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+    async getUsers(
+        @Query('email') email: string,
+        @Query('order') order: string,
+        @Query('sort') sort: string,
+        @Query('page') page: number,
+        @Query('limit') limit: number){
+    return this.authService.getUsers({
+      email,
+      order,
+      sort,
+      page,
+      limit
     });
+  }
+  @Get('me')
+  async getCurrentUser(@CurrentUser() user){
+    return this.authService.getUser(user.id);
+  }
+
+  @Get(':id')
+  async getUser(@Param('id', ParseIntPipe) id: number){
+    return this.authService.getUser(id);
   }
   @AllowUnauthorized()
   @Get('validate-token')  
