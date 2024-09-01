@@ -1,0 +1,6 @@
+export enum MediaSourceStatusEnum {
+  NOT_PROCESSED = 'NOT_PROCESSED',
+  PROCESSING = 'PROCESSING',
+  PROCESSED = 'PROCESSED',
+  FAILURE = 'FAILURE',
+}

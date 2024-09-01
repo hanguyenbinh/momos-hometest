@@ -13,7 +13,6 @@ interface UserFilters extends FiltersInterface {
   email: string;
 }
 
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -22,31 +21,35 @@ export class AuthService {
     private logger: Logger,
 
     private prismaService: PrismaService,
-  ) { }
+  ) {}
   async getUsers(filters: UserFilters) {
-    console.log(filters)
+    console.log(filters);
     const take = !Number.isNaN(filters.limit) ? filters.limit : 10;
-    const skip = ((!Number.isNaN(filters.page) || filters.page > 0 ? filters.page : 1) - 1) * take;
+    const skip =
+      ((!Number.isNaN(filters.page) || filters.page > 0 ? filters.page : 1) -
+        1) *
+      take;
     const orderBy = {};
-    const where: any = {}
+    const where: any = {};
     if (filters.order) {
-      orderBy[filters.order] = 'asc' == filters.sort ? "asc" : 'desc'
+      orderBy[filters.order] = 'asc' == filters.sort ? 'asc' : 'desc';
     }
     if (isNotEmpty(filters.email)) {
       where.email = {
-        contains: filters.email
-      }
+        contains: filters.email,
+      };
     }
     const [users, count] = await this.prismaService.$transaction([
       this.prismaService.user.findMany({
         skip,
         take,
         orderBy,
-        where
+        where,
       }),
-      this.prismaService.user.count()]);
+      this.prismaService.user.count(),
+    ]);
 
-    const hasNextPage = count / take > filters.page
+    const hasNextPage = count / take > filters.page;
     return new HttpResult({
       message: 'GET_USERS_SUCCESS',
       data: { users, count, hasNextPage },
@@ -55,9 +58,9 @@ export class AuthService {
   async getUser(id: number) {
     const user = await this.prismaService.user.findUnique({
       where: {
-        id
-      }
-    })
+        id,
+      },
+    });
     if (!user) {
       return new HttpResult({
         status: false,
@@ -68,7 +71,6 @@ export class AuthService {
       message: 'GET_USER_SUCCESS',
       data: { user },
     });
-
   }
 
   async register(input: CreateUserDto) {
@@ -94,17 +96,14 @@ export class AuthService {
   }
 
   async login(input: UserLoginDto) {
-    const user = await this.prismaService.user.findUnique(
-      {
-        where: { email: input.email },
-        select: {
-          id: true,
-          email: true,
-          password: true
-        },
-      }
-
-    )
+    const user = await this.prismaService.user.findUnique({
+      where: { email: input.email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+      },
+    });
     if (!user) {
       return new HttpResult({
         status: false,
@@ -120,25 +119,24 @@ export class AuthService {
     }
     const payload = {
       userId: user.id,
-      userEmail: user.email
+      userEmail: user.email,
     };
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get('jwt.signOptions.expiresIn')
+      expiresIn: this.configService.get('jwt.signOptions.expiresIn'),
     });
     const expired = moment().add(7, 'days').valueOf();
     return new HttpResult({
       data: {
         user: {
           id: user.id,
-          email: user.email
+          email: user.email,
         },
         token: accessToken,
-        tokenExpires: expired
+        tokenExpires: expired,
       },
       message: 'LOGIN_SUCCESS',
     });
   }
-
 
   async validateToken(token: string) {
     try {
@@ -165,17 +163,15 @@ export class AuthService {
   }
 
   async validate(id: number) {
-
     try {
       const user: any = await this.prismaService.user.findUnique({
         where: { id },
         select: {
           id: true,
           email: true,
-          password: true
+          password: true,
         },
-      }
-      );
+      });
 
       if (!user) {
         return null;

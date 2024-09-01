@@ -11,6 +11,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { iterate } from 'iterare';
 import { mapChildrenToValidationErrors } from './common/utils/validation.utils';
 import { InvalidInputException } from './common/exceptions/invalid-input.exception';
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const appConfig = configuration() as any;
@@ -30,8 +31,9 @@ async function bootstrap() {
   if (process.env.POSTGRESQL_DATABASE) {
     typeormConfig.database = process.env.POSTGRESQL_DATABASE;
   }
-  process.env['DATABASE_URL'] = `postgres://${typeormConfig.username}:${typeormConfig.password}@${typeormConfig.host}:${typeormConfig.port}/${typeormConfig.database}`;
-  
+  process.env['DATABASE_URL'] =
+    `postgres://${typeormConfig.username}:${typeormConfig.password}@${typeormConfig.host}:${typeormConfig.port}/${typeormConfig.database}`;
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
@@ -55,9 +57,11 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new AllExceptionsFilter());
+  app.use(bodyParser.json({ limit: '50mb' }));
+  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
   app.enableCors();
   const reflector = app.get(Reflector);
-  app.useGlobalGuards(new JwtAuthGuard(reflector, appConfig),);
+  app.useGlobalGuards(new JwtAuthGuard(reflector, appConfig));
   if (appConfig.server.enableOpenAPI === true) {
     const options = new DocumentBuilder()
       .addBearerAuth()

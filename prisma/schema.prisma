@@ -13,13 +13,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum OrderStatus {
-  CREATED
-  CANCELLED
-  PROCESSING
-  PENDING
-  COMPLETED
+enum MediaType {
+  IMAGE
+  VIDEO  
 }
+enum Status {
+  NOT_PROCESSED
+  PROCESSING
+  PROCESSED
+  FAILURE
+}
+
+enum CreateMediaSourceResultStatus {
+  PROCESSING
+  DONE
+  ERROR
+}
+
+
 
 model User {
   id        Int       @id @default(autoincrement())
@@ -32,49 +43,44 @@ model User {
   deletedAt DateTime?
 }
 
-model Customer {
-  id        Int       @id @default(autoincrement())
-  name      String
-  phone     String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  orders Order[]
-}
-
-model Goods {
-  id        Int       @id @default(autoincrement())
-  name      String
-  quantity  Int       @default(0)
-  unitPrice Decimal   @db.Decimal(10, 2)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  orders GoodsInOrders[]
-}
-
-model Order {
-  id         Int         @id @default(autoincrement())
-  customerId Int
-  status     OrderStatus @default(CREATED)
-  total      Decimal     @db.Decimal(10, 2)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+model MediaSource {
+  id          Int      @id @default(autoincrement())
+  url         String
+  status      Status   @default(NOT_PROCESSED)
+  isCSR       Boolean     @default(false)
+  totalImages Int         @default(0)
+  totalVideos Int         @default(0)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
   deletedAt  DateTime?
 
-  items    GoodsInOrders[]
-  customer Customer        @relation(fields: [customerId], references: [id])
+  media       Media[]
 }
 
-model GoodsInOrders {
-  goodsId   Int
-  goods     Goods @relation(fields: [goodsId], references: [id])
-  orderId   Int
-  order     Order @relation(fields: [orderId], references: [id])
-  quantity  Int
-  price     Decimal   @db.Decimal(10, 2)
 
-  @@id([goodsId, orderId])
+model Media {
+  id          Int      @id @default(autoincrement())
+  url         String
+  name        String
+  path        String
+  type        MediaType   @default(IMAGE)
+  status      Status      @default(NOT_PROCESSED)
+
+  sourceId    Int  
+  source      MediaSource @relation(fields: [sourceId], references: [id])
+  
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  deletedAt  DateTime?  
+}
+
+model CreateMediaSourceResult {
+  id          Int      @id @default(autoincrement())
+  code         String   @unique
+  error        Json?  
+  status      CreateMediaSourceResultStatus      @default(PROCESSING)
+  
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  deletedAt  DateTime?  
 }
