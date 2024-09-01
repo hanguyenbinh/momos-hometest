@@ -66,8 +66,8 @@ model Media {
   type        MediaType   @default(IMAGE)
   status      Status      @default(NOT_PROCESSED)
 
-  sourceId    Int  
-  source      MediaSource @relation(fields: [sourceId], references: [id])
+  sourceId    Int?
+  source      MediaSource? @relation(fields: [sourceId], references: [id])
   
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt

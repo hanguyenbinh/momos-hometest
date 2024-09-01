@@ -9,6 +9,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
 import { resolve } from 'path';
 import { createWriteStream } from 'fs';
+import { isEmpty } from 'class-validator';
+import { isImage, isVideo } from 'src/common/file-extension.common';
 
 @Processor('crawl-media', { concurrency: 5000 })
 export class MediaSourceProcessor extends WorkerHost {
@@ -103,6 +105,7 @@ export class MediaSourceProcessor extends WorkerHost {
   async pullNextImageForDownload() {
     const image = await this.prismaService.media.findFirst({
       where: {
+        type: MediaTypeEnum.IMAGE,
         status: MediaSourceStatusEnum.NOT_PROCESSED,
       },
       orderBy: {
@@ -178,6 +181,7 @@ export class MediaSourceProcessor extends WorkerHost {
   async buildDownloadImageJobs() {
     const images = await this.prismaService.media.findMany({
       where: {
+        type: MediaTypeEnum.IMAGE,
         status: MediaSourceStatusEnum.NOT_PROCESSED,
       },
       skip: 1,
@@ -337,19 +341,46 @@ export class MediaSourceProcessor extends WorkerHost {
       console.log(error);
     }
   }
+  isMediaLink(url: string) {
+    const fileName = url.substring(
+      url.lastIndexOf('/'),
+      url.indexOf('?') || undefined,
+    );
+    const fileExt = fileName.substring(fileName.lastIndexOf('.') + 1);
+    if (isEmpty(fileExt)) return true;
+    return {
+      isMedia: isImage[fileExt] || isVideo[fileExt],
+      isImage: isImage[fileExt] || false,
+      isVideo: isVideo[fileExt] || false,
+      ext: fileExt,
+    };
+  }
 
   async bulkCreate(code: string, urls: string[]) {
     let mediaSource: any = null;
     try {
       mediaSource = await this.prismaService.$transaction(
-        urls.map((url: string) =>
-          this.prismaService.mediaSource.create({
+        urls.map((url: string) => {
+          const isMedia: any = this.isMediaLink(url);
+          if (isMedia.isMedia) {
+            return this.prismaService.media.create({
+              data: {
+                url: url,
+                name: `${uuidv4()}${isMedia.ext}`,
+                type: isMedia.isImage
+                  ? MediaTypeEnum.IMAGE
+                  : MediaTypeEnum.VIDEO,
+                path: resolve(this.downloadDir),
+              },
+            });
+          }
+          return this.prismaService.mediaSource.create({
             data: {
               url,
               status: MediaSourceStatusEnum.PROCESSING,
             },
-          }),
-        ),
+          });
+        }),
       );
       await this.saveSuccessMediaSourceResult(code);
     } catch (error) {
