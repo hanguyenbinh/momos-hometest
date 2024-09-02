@@ -3,4 +3,5 @@ export enum MediaSourceStatusEnum {
   PROCESSING = 'PROCESSING',
   PROCESSED = 'PROCESSED',
   FAILURE = 'FAILURE',
+  DOWNLOADED = 'DOWNLOADED',
 }

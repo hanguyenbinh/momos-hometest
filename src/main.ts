@@ -12,7 +12,9 @@ import { iterate } from 'iterare';
 import { mapChildrenToValidationErrors } from './common/utils/validation.utils';
 import { InvalidInputException } from './common/exceptions/invalid-input.exception';
 import * as bodyParser from 'body-parser';
-
+import { WinstonModule } from 'nest-winston';
+import { format, transports } from 'winston';
+import 'winston-daily-rotate-file';
 async function bootstrap() {
   const appConfig = configuration() as any;
   const typeormConfig = appConfig.database;
@@ -34,7 +36,46 @@ async function bootstrap() {
   process.env['DATABASE_URL'] =
     `postgres://${typeormConfig.username}:${typeormConfig.password}@${typeormConfig.host}:${typeormConfig.port}/${typeormConfig.database}`;
 
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const logDir = appConfig.server.logDir;
+
+  const logger = WinstonModule.createLogger({
+    transports: [
+      // file on daily rotation (error only)
+      new transports.DailyRotateFile({
+        // %DATE will be replaced by the current date
+        filename: `${logDir}/%DATE%-error.log`,
+        level: 'error',
+        format: format.combine(format.timestamp(), format.json()),
+        datePattern: 'YYYY-MM-DD',
+        zippedArchive: false, // don't want to zip our logs
+        maxFiles: '2d', // will keep log until they are older than 30 days,
+        maxSize: '10m',
+      }),
+      // same for all levels
+      new transports.DailyRotateFile({
+        filename: `${logDir}/%DATE%-combined.log`,
+        format: format.combine(format.timestamp(), format.json()),
+        datePattern: 'YYYY-MM-DD',
+        zippedArchive: false,
+        maxFiles: '2d',
+        maxSize: '10m',
+      }),
+      new transports.Console({
+        format: format.combine(
+          format.cli(),
+          format.splat(),
+          format.timestamp(),
+          format.printf((info) => {
+            return `${info.timestamp} ${info.level}: ${info.message}`;
+          }),
+        ),
+      }),
+    ],
+  });
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger,
+  });
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
   app.useGlobalPipes(

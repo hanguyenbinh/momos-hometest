@@ -22,6 +22,7 @@ enum Status {
   PROCESSING
   PROCESSED
   FAILURE
+  DOWNLOADED
 }
 
 enum CreateMediaSourceResultStatus {

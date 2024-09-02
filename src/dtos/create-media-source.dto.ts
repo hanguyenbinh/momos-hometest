@@ -6,9 +6,7 @@ import { Type } from 'class-transformer';
 const exampleUrls = Array(200).fill(
   'https://www.mykingdom.com.vn/collections/lego?srsltid=AfmBOopvRtqdhAo2zNQ3OoEH_LqswGwagubwXzMWXMrZItx2vyIYaGoO',
 );
-const videoUrls = Array(1000).fill(
-  'https://www.pexels.com/video/drops-of-liquid-on-a-tray-to-be-use-as-samples-3195394/',
-);
+const videoUrls = Array(1000).fill('https://www.airbnb.com/');
 // const exampleUrls = Array(5000).fill('http://localhost:5000');
 
 export class CreateMediaSourceDto extends BaseDto {

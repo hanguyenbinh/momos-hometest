@@ -3,6 +3,7 @@
 /node_modules
 /build
 /download
+/html-source
 
 # Logs
 logs
