@@ -50,6 +50,7 @@ COPY --from=builder /home/node/app/dbus/run.sh /etc/init/run.sh
 
 
 RUN npm ci
+# RUN npx prisma generate
 USER pptruser
 ENV DBUS_SESSION_BUS_ADDRESS autolaunch:
 CMD ["node", "src/main.js"]

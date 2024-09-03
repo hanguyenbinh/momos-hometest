@@ -9,12 +9,8 @@ services:
         cap_add:
             - SYS_ADMIN
         environment:
-            - NODE_ENV=development            
-            - POSTGRESQL_HOST=hometest_db
-            - POSTGRESQL_PORT=5432
-            - POSTGRESQL_PASSWORD=123456
-            - POSTGRESQL_USERNAME=hometest_user
-            - POSTGRESQL_DATABASE=hometest_db
+            - NODE_ENV=development
+            - DATABASE_URL=postgres://hometest_user:123456@hometest_db:5432/hometest_db
             - REDIS_HOST=redis
             - REDIS_PORT=6379
             - REDIS_PASSWORD=123456
@@ -39,8 +35,7 @@ services:
             - 5432:5432
         restart: always
         volumes:
-            - postgresql_data:/bitnami/postgresql
-            - ./database:/docker-entrypoint-initdb.d/create-db.sql
+            - postgresql_data:/bitnami/postgresql            
         environment:
             - POSTGRESQL_PASSWORD=123456
             - POSTGRESQL_USERNAME=hometest_user
