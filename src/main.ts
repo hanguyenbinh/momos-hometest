@@ -17,24 +17,27 @@ import { format, transports } from 'winston';
 import 'winston-daily-rotate-file';
 async function bootstrap() {
   const appConfig = configuration() as any;
-  const typeormConfig = appConfig.database;
-  if (process.env.POSTGRESQL_HOST) {
-    typeormConfig.host = process.env.POSTGRESQL_HOST;
+  if (!process.env['DATABASE_URL']) {
+    const typeormConfig = appConfig.database;
+    if (process.env.POSTGRESQL_HOST) {
+      typeormConfig.host = process.env.POSTGRESQL_HOST;
+    }
+    if (process.env.POSTGRESQL_PORT) {
+      typeormConfig.port = process.env.POSTGRESQL_PORT;
+    }
+    if (process.env.POSTGRESQL_USER) {
+      typeormConfig.username = process.env.POSTGRESQL_USER;
+    }
+    if (process.env.POSTGRESQL_PASSWORD) {
+      typeormConfig.password = process.env.POSTGRESQL_PASSWORD;
+    }
+    if (process.env.POSTGRESQL_DATABASE) {
+      typeormConfig.database = process.env.POSTGRESQL_DATABASE;
+    }
+
+    process.env['DATABASE_URL'] =
+      `postgres://${typeormConfig.username}:${typeormConfig.password}@${typeormConfig.host}:${typeormConfig.port}/${typeormConfig.database}`;
   }
-  if (process.env.POSTGRESQL_PORT) {
-    typeormConfig.port = process.env.POSTGRESQL_PORT;
-  }
-  if (process.env.POSTGRESQL_USER) {
-    typeormConfig.username = process.env.POSTGRESQL_USER;
-  }
-  if (process.env.POSTGRESQL_PASSWORD) {
-    typeormConfig.password = process.env.POSTGRESQL_PASSWORD;
-  }
-  if (process.env.POSTGRESQL_DATABASE) {
-    typeormConfig.database = process.env.POSTGRESQL_DATABASE;
-  }
-  process.env['DATABASE_URL'] =
-    `postgres://${typeormConfig.username}:${typeormConfig.password}@${typeormConfig.host}:${typeormConfig.port}/${typeormConfig.database}`;
 
   const logDir = appConfig.server.logDir;
 

@@ -36,7 +36,7 @@ export class AuthService {
     }
     if (isNotEmpty(filters.email)) {
       where.email = {
-        contains: filters.email, 
+        contains: filters.email,
       };
     }
     const [users, count] = await this.prismaService.$transaction([

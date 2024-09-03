@@ -17,7 +17,7 @@ import { PrismaModule } from 'src/prisma/prisma.module';
       useFactory: async (configService: ConfigService) => {
         return configService.get('jwt');
       },
-    }),    
+    }),
   ],
   providers: [JwtStrategy, AuthService, Logger],
   controllers: [AuthController],
