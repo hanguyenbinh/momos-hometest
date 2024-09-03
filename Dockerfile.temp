@@ -1,0 +1,39 @@
+FROM timbru31/node-chrome:20-alpine as builder
+
+ENV NODE_ENV build
+
+RUN mkdir -p /home/node/app
+WORKDIR /home/node/app
+
+COPY --chown=node:node . /home/node/app
+
+RUN npm ci \
+    && npm run build
+
+USER node
+
+FROM timbru31/node-chrome:20-alpine
+
+ENV NODE_ENV development
+RUN apk add \
+      ca-certificates \
+      dbus \
+      dbus-dev \
+      g++ \
+      git
+
+
+WORKDIR /home/node/app
+
+COPY --from=builder /home/node/app/package*.json /home/node/app/
+COPY --from=builder /home/node/app/dist/ /home/node/app/
+COPY --from=builder /home/node/app/config.yaml /home/node/app/
+COPY --from=builder /home/node/app/prisma/ /home/node/app/prisma/
+
+RUN npm ci
+RUN npx @puppeteer/browsers install chrome@128.0.6613.119
+
+
+USER node
+
+CMD ["node", "src/main.js"]

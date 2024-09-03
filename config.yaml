@@ -10,6 +10,7 @@ server:
   logDir: ./logs
   downloadDir: ./download
   pageSize: 20
+  chromiumPath: /usr/bin/google-chrome-stable
 database:
   type: postgres
   host: localhost

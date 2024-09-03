@@ -1,10 +1,10 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
-import { MediaType } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { isNotEmpty } from 'class-validator';
 import { CreateMediaSourceStatusEnum } from 'src/common/enum/create-media-source-status.enum';
 import { MediaSourceStatusEnum } from 'src/common/enum/media-source-status.enum';
+import { MediaTypeEnum } from 'src/common/enum/media-type.enum';
 import { HttpResult } from 'src/common/http/http-result.http';
 import { FiltersInterface } from 'src/common/interface/filters.interface';
 import { CreateMediaSourceDto } from 'src/dtos/create-media-source.dto';
@@ -121,7 +121,7 @@ export class MediaSourceService {
       take;
     const orderBy = {};
     const where: any = {
-      type: MediaType.IMAGE,
+      type: MediaTypeEnum.IMAGE,
     };
     if (filters.order) {
       orderBy[filters.order] = 0 == filters.sort ? 'asc' : 'desc';
@@ -151,7 +151,7 @@ export class MediaSourceService {
       }),
       this.prismaService.media.count({
         where: {
-          type: MediaType.IMAGE,
+          type: MediaTypeEnum.IMAGE,
         },
       }),
     ]);
@@ -170,7 +170,7 @@ export class MediaSourceService {
       take;
     const orderBy = {};
     const where: any = {
-      type: MediaType.VIDEO,
+      type: MediaTypeEnum.VIDEO,
     };
     if (filters.order) {
       orderBy[filters.order] = 0 == filters.sort ? 'asc' : 'desc';
@@ -199,7 +199,7 @@ export class MediaSourceService {
       }),
       this.prismaService.media.count({
         where: {
-          type: MediaType.VIDEO,
+          type: MediaTypeEnum.VIDEO,
         },
       }),
     ]);

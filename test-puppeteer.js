@@ -7,7 +7,7 @@ const downloadPath = './test-download';
 const sourceUrl = 'https://www.airbnb.com/';
 async function run() {
   const browser = await puppeteer.launch({
-    headless: 'new',
+    dumpio: true,
 
     args: ['--disable-gpu', sourceUrl],
   });

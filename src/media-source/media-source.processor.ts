@@ -28,6 +28,7 @@ export class MediaSourceProcessor extends WorkerHost {
   private concurrentSourceDownload: number = 5000;
   private concurrentParseMediaUrl: number = 200;
   private concurrentParseMediaUrlCSR: number = 1;
+  private chromiumPath: string = '';
   constructor(
     private prismaService: PrismaService,
     private configService: ConfigService,
@@ -41,6 +42,7 @@ export class MediaSourceProcessor extends WorkerHost {
     this.concurrentImageDownload =
       configService.get('server.concurrentImageDownload') ||
       this.concurrentImageDownload;
+    this.chromiumPath = configService.get('server.chromiumPath');
     this.buildDownloadImageJobs();
     this.crawlMediaQueue.add(
       'build-parse-url-from-source',
@@ -134,14 +136,9 @@ export class MediaSourceProcessor extends WorkerHost {
 
       let status = MediaSourceStatusEnum.DOWNLOADED;
       const browser = await puppeteer.launch({
-        headless: true,
-        browser: 'chrome',
-
-        args: [
-          '--disable-gpu',
-          '--remote-debugging-port=9222',
-          mediaSource.url,
-        ],
+        executablePath: this.chromiumPath,
+        dumpio: true,
+        args: [mediaSource.url],
       });
 
       const pages = await browser.pages();
@@ -199,6 +196,7 @@ export class MediaSourceProcessor extends WorkerHost {
         return;
       }
     } catch (error) {
+      console.log(error)
       this.logger.error('parseMediaUrlFromCSRSource', error);
     }
     await this.updateMediaSource({
@@ -207,162 +205,180 @@ export class MediaSourceProcessor extends WorkerHost {
     });
   }
   async checkForAvailableMediaSource() {
-    const mediaSource = await this.prismaService.mediaSource.findMany({
-      orderBy: {
-        createdAt: 'asc',
-      },
-      skip: 1,
-      take: this.concurrentSourceDownload,
-      where: {
-        status: MediaSourceStatusEnum.NOT_PROCESSED,
-      },
-    });
-    if (mediaSource.length > 0) {
-      await this.buildDownloadPageSourceJobs(mediaSource);
+    try {
+      const mediaSource = await this.prismaService.mediaSource.findMany({
+        orderBy: {
+          createdAt: 'asc',
+        },
+        skip: 0,
+        take: this.concurrentSourceDownload,
+        where: {
+          status: MediaSourceStatusEnum.NOT_PROCESSED,
+        },
+      });
+      if (mediaSource.length > 0) {
+        await this.buildDownloadPageSourceJobs(mediaSource);
+      }
+    } catch (error) {
+      this.logger.error('checkForAvailableMediaSource', error);
     }
   }
   async buildParseMediaUrlFromCSRSource() {
-    const mediaSources = await this.prismaService.mediaSource.findMany({
-      orderBy: {
-        createdAt: 'asc',
-      },
-      skip: 1,
-      take: this.concurrentParseMediaUrlCSR,
-      where: {
-        status: MediaSourceStatusEnum.DOWNLOADED,
-        isCSR: true,
-      },
-    });
-    if (mediaSources.length > 0) {
-      await Promise.all(
-        mediaSources.map((mediaSource: any) => {
-          return this.crawlMediaQueue.add(
-            'parse-url-from-csr-source',
-            mediaSource,
-            {
-              priority: 50,
-            },
-          );
-        }),
-      );
+    try {
+      const mediaSources = await this.prismaService.mediaSource.findMany({
+        orderBy: {
+          createdAt: 'asc',
+        },
+        take: this.concurrentParseMediaUrlCSR,
+        where: {
+          status: MediaSourceStatusEnum.DOWNLOADED,
+          isCSR: true,
+        },
+      });
+      if (mediaSources.length > 0) {
+        await Promise.all(
+          mediaSources.map((mediaSource: any) => {
+            return this.crawlMediaQueue.add(
+              'parse-url-from-csr-source',
+              mediaSource,
+              {
+                priority: 50,
+              },
+            );
+          }),
+        );
+      }
+    } catch (error) {
+      this.logger.error('buildParseMediaUrlFromCSRSource', error);
     }
   }
   async buildParseMediaUrlFromSourceJob() {
-    const mediaSources = await this.prismaService.mediaSource.findMany({
-      orderBy: {
-        createdAt: 'asc',
-      },
-      skip: 1,
-      take: this.concurrentParseMediaUrl,
-      where: {
-        status: MediaSourceStatusEnum.DOWNLOADED,
-        NOT: {
-          isCSR: true,
+    try {
+      const mediaSources = await this.prismaService.mediaSource.findMany({
+        orderBy: {
+          createdAt: 'asc',
         },
-      },
-    });
-    console.log('buildParseMediaUrlFromSourceJob', mediaSources.length);
-    if (mediaSources.length > 0) {
-      await Promise.all(
-        mediaSources.map((mediaSource: any) => {
-          return this.crawlMediaQueue.add(
-            'parse-url-from-source',
-            mediaSource,
-            {
-              priority: 40,
-            },
-          );
-        }),
-      );
+        skip: 0,
+        take: this.concurrentParseMediaUrl,
+        where: {
+          status: MediaSourceStatusEnum.DOWNLOADED,
+          NOT: {
+            isCSR: true,
+          },
+        },
+      });
+      if (mediaSources.length > 0) {
+        await Promise.all(
+          mediaSources.map((mediaSource: any) => {
+            return this.crawlMediaQueue.add(
+              'parse-url-from-source',
+              mediaSource,
+              {
+                priority: 40,
+              },
+            );
+          }),
+        );
+      }
+    } catch (error) {
+      this.logger.error('buildParseMediaUrlFromSourceJob', error);
     }
   }
   async parseMediaUrlFromSource(mediaSource) {
-    await this.prismaService.mediaSource.update({
-      where: {
-        id: mediaSource.id,
-      },
-      data: {
-        status: MediaSourceStatusEnum.PROCESSING,
-      },
-    });
-    const data = readFileSync(`./html-source/${mediaSource.id}.html`, 'utf8');
-    const mediaRegex = /(<img|<video)[^>]+src="([^">]+)"/g;
-    const srcRegex = /src="([^"]*?)"/;
+    try {
+      await this.prismaService.mediaSource.update({
+        where: {
+          id: mediaSource.id,
+        },
+        data: {
+          status: MediaSourceStatusEnum.PROCESSING,
+        },
+      });
+      const data = readFileSync(`./html-source/${mediaSource.id}.html`, 'utf8');
+      const mediaRegex = /(<img|<video)[^>]+src="([^">]+)"/g;
+      const srcRegex = /src="([^"]*?)"/;
 
-    const mediaFiles = [];
-    let totalImages = 0;
-    let totalVideos = 0;
-    let isCSR = false;
-    let status = MediaSourceStatusEnum.DOWNLOADED;
-    const imagesVideos = data.match(mediaRegex);
-    if (imagesVideos) {
-      imagesVideos.forEach((img: string) => {
-        const src = srcRegex.exec(img);
-        if (!src || src.length < 2) {
-          this.logger.warn('downloadPageSource: difference format', img);
-          return;
-        }
-        const url = this.correctUrl(src[1]);
-        const meidaName = url.substring(
-          url.lastIndexOf('/') + 1,
-          url.indexOf('?') || undefined,
-        );
-        const mediaType = meidaName.substring(meidaName.lastIndexOf('.') + 1);
-        const isImage = img.startsWith('<img');
-        if (isImage) totalImages++;
-        else totalVideos++;
-        mediaFiles.push({
-          url: this.correctUrl(src[1]),
-          sourceId: mediaSource.id,
-          name: `${uuidv4()}.${mediaType}`,
-          type: isImage ? MediaTypeEnum.IMAGE : MediaTypeEnum.VIDEO,
-          path: resolve(this.downloadDir),
+      const mediaFiles = [];
+      let totalImages = 0;
+      let totalVideos = 0;
+      let isCSR = false;
+      let status = MediaSourceStatusEnum.DOWNLOADED;
+      const imagesVideos = data.match(mediaRegex);
+      if (imagesVideos) {
+        imagesVideos.forEach((img: string) => {
+          const src = srcRegex.exec(img);
+          if (!src || src.length < 2) {
+            this.logger.warn('downloadPageSource: difference format', img);
+            return;
+          }
+          const url = this.correctUrl(src[1]);
+          const meidaName = url.substring(
+            url.lastIndexOf('/') + 1,
+            url.indexOf('?') || undefined,
+          );
+          const mediaType = meidaName.substring(meidaName.lastIndexOf('.') + 1);
+          const isImage = img.startsWith('<img');
+          if (isImage) totalImages++;
+          else totalVideos++;
+          mediaFiles.push({
+            url: this.correctUrl(src[1]),
+            sourceId: mediaSource.id,
+            name: `${uuidv4()}.${mediaType}`,
+            type: isImage ? MediaTypeEnum.IMAGE : MediaTypeEnum.VIDEO,
+            path: resolve(this.downloadDir),
+          });
         });
+      }
+      if (mediaFiles.length > 0) {
+        await this.prismaService.media.createMany({
+          data: mediaFiles,
+        });
+        status = MediaSourceStatusEnum.PROCESSED;
+        unlinkSync(`./html-source/${mediaSource.id}.html`);
+      } else {
+        isCSR = true;
+      }
+      await this.updateMediaSource({
+        ...mediaSource,
+        totalImages,
+        totalVideos,
+        isCSR,
+        status,
       });
+    } catch (error) {
+      this.logger.error('parseMediaUrlFromSource', error);
     }
-    if (mediaFiles.length > 0) {
-      await this.prismaService.media.createMany({
-        data: mediaFiles,
-      });
-      status = MediaSourceStatusEnum.PROCESSED;
-      unlinkSync(`./html-source/${mediaSource.id}.html`);
-    } else {
-      isCSR = true;
-    }
-    await this.updateMediaSource({
-      ...mediaSource,
-      totalImages,
-      totalVideos,
-      isCSR,
-      status,
-    });
   }
   async pullNextImageForDownload() {
-    const image = await this.prismaService.media.findFirst({
-      where: {
-        type: MediaTypeEnum.IMAGE,
-        status: MediaSourceStatusEnum.NOT_PROCESSED,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
-    if (!image) {
-      return;
+    try {
+      const image = await this.prismaService.media.findFirst({
+        where: {
+          type: MediaTypeEnum.IMAGE,
+          status: MediaSourceStatusEnum.NOT_PROCESSED,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+      if (!image) {
+        return;
+      }
+      await this.prismaService.media.update({
+        where: {
+          id: image.id,
+        },
+        data: {
+          status: MediaSourceStatusEnum.PROCESSING,
+        },
+      });
+      await this.crawlMediaQueue.add('download-image', image, {
+        // removeOnComplete: true,
+        // removeOnFail: true,
+        priority: 20,
+      });
+    } catch (error) {
+      this.logger.error('pullNextImageForDownload', error);
     }
-    await this.prismaService.media.update({
-      where: {
-        id: image.id,
-      },
-      data: {
-        status: MediaSourceStatusEnum.PROCESSING,
-      },
-    });
-    return this.crawlMediaQueue.add('download-image', image, {
-      // removeOnComplete: true,
-      // removeOnFail: true,
-      priority: 20,
-    });
   }
 
   async saveBase64Image(image: any) {
@@ -420,56 +436,68 @@ export class MediaSourceProcessor extends WorkerHost {
     }
   }
   async updateSuccessMediaDownload(media) {
-    await this.prismaService.media.update({
-      where: {
-        id: media.id,
-      },
-      data: {
-        status: MediaSourceStatusEnum.PROCESSED,
-      },
-    });
+    try {
+      await this.prismaService.media.update({
+        where: {
+          id: media.id,
+        },
+        data: {
+          status: MediaSourceStatusEnum.PROCESSED,
+        },
+      });
+    } catch (error) {
+      this.logger.error('updateSuccessMediaDownload', error);
+    }
   }
   async updateFailureMediaDownload(media) {
-    await this.prismaService.media.update({
-      where: {
-        id: media.id,
-      },
-      data: {
-        status: MediaSourceStatusEnum.FAILURE,
-      },
-    });
+    try {
+      await this.prismaService.media.update({
+        where: {
+          id: media.id,
+        },
+        data: {
+          status: MediaSourceStatusEnum.FAILURE,
+        },
+      });
+    } catch (error) {
+      this.logger.error('updateFailureMediaDownload', error);
+    }
   }
   async buildDownloadImageJobs() {
-    const images = await this.prismaService.media.findMany({
-      where: {
-        type: MediaTypeEnum.IMAGE,
-        status: MediaSourceStatusEnum.NOT_PROCESSED,
-      },
-      skip: 1,
-      take: this.concurrentImageDownload,
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
-    if (images.length == 0) {
-      return;
-    }
+    try {
+      const images = await this.prismaService.media.findMany({
+        where: {
+          type: MediaTypeEnum.IMAGE,
+          status: MediaSourceStatusEnum.NOT_PROCESSED,
+        },
+        skip: 0,
+        take: this.concurrentImageDownload,
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+      if (images.length == 0) {
+        return;
+      }
 
-    await Promise.all(
-      images.map(async (image) => {
-        await this.prismaService.media.update({
-          where: {
-            id: image.id,
-          },
-          data: {
-            status: MediaSourceStatusEnum.PROCESSING,
-          },
-        });
-        return this.crawlMediaQueue.add('download-image', image, {
-          priority: 20,
-        });
-      }),
-    );
+      await Promise.all(
+        images.map(async (image) => {
+          await this.prismaService.media.update({
+            where: {
+              id: image.id,
+            },
+            data: {
+              status: MediaSourceStatusEnum.PROCESSING,
+            },
+          });
+          return this.crawlMediaQueue.add('download-image', image, {
+            priority: 20,
+          });
+        }),
+      );
+    } catch (error) {
+      this.logger.error('buildDownloadImageJobs', error);
+    }
   }
 
   correctUrl(link: string) {
@@ -638,12 +666,5 @@ export class MediaSourceProcessor extends WorkerHost {
     } catch (error) {
       await this.saveFailureMediaSourceResult(code, error);
     }
-    this.crawlMediaQueue.add(
-      'check-available-media-source',
-      {},
-      {
-        priority: 29,
-      },
-    );
   }
 }
