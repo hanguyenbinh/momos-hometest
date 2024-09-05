@@ -121,6 +121,9 @@ async function bootstrap() {
       swaggerOptions: { persistAuthorization: true },
     });
   }
+  process.on('uncaughtException', function (error: any) {
+    logger.error('UncaughtException', error);
+  });
   await app.listen(
     appConfig.server.port || 3000,
     appConfig.server.host || '0.0.0.0',
