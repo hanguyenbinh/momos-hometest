@@ -113,6 +113,25 @@ export class MediaSourceService {
     });
   }
 
+  async getCreateMediaResourceStatus(code: string) {
+    const job =
+      await this.prismaService.createMediaSourceResultStatus.findUnique({
+        where: {
+          code,
+        },
+      });
+    if (!job) {
+      return new HttpResult({
+        status: false,
+        message: 'JOB_NOT_FOUND',
+      });
+    }
+    return new HttpResult({
+      message: 'GET_JOB_SUCcESS',
+      data: { createMediaResourceStatus: job },
+    });
+  }
+
   async getImages(filters: MediaFilters) {
     const take = !Number.isNaN(filters.limit) ? filters.limit : 10;
     const skip =
