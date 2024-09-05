@@ -24,9 +24,9 @@ const agent = new HttpsCookieAgent({ cookies: { jar } });
 @Injectable()
 export class MediaSourceProcessor extends WorkerHost {
   private downloadDir: string = './download';
-  private concurrentImageDownload: number = 50;
+  private concurrentImageDownload: number = 1000;
   private concurrentSourceDownload: number = 5000;
-  private concurrentParseMediaUrl: number = 200;
+  private concurrentParseMediaUrl: number = 50;
   private concurrentParseMediaUrlCSR: number = 1;
   private chromiumPath: string = '';
   constructor(

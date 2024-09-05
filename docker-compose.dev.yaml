@@ -1,4 +1,4 @@
-version: "2"
+version: "3"
 
 services:
     hometest_backend:
@@ -29,9 +29,6 @@ services:
         depends_on:
             - hometest_db
             - redis
-        mem_limit: 4G
-        cpus: "1"
-        cpuset: '0'
         tty: true
     hometest_db:
         image: 'bitnami/postgresql:11'
