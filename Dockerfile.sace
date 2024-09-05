@@ -16,11 +16,10 @@ FROM timbru31/node-chrome:20-alpine
 
 ENV NODE_ENV development
 RUN apk add \
-      ca-certificates \
-      dbus \
-      dbus-dev \
+      ca-certificates \      
       g++ \
-      git
+      git \
+      google-chrome-stable libxss1 dbus dbus-x11
 
 
 WORKDIR /home/node/app
@@ -31,9 +30,10 @@ COPY --from=builder /home/node/app/config.yaml /home/node/app/
 COPY --from=builder /home/node/app/prisma/ /home/node/app/prisma/
 
 RUN npm ci
-RUN npx @puppeteer/browsers install chrome@128.0.6613.119
+# RUN npx @puppeteer/browsers install chrome@128.0.6613.119
 
 
 USER node
+ENV DBUS_SESSION_BUS_ADDRESS autolaunch:
 
 CMD ["node", "src/main.js"]

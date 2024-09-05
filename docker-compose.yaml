@@ -6,6 +6,7 @@ services:
             context: .
         ports:
             - 3000:3000
+        restart: always
         cap_add:
             - SYS_ADMIN
         environment:

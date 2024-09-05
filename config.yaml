@@ -10,7 +10,8 @@ server:
   logDir: ./logs
   downloadDir: ./download
   pageSize: 20
-  chromiumPath: /usr/bin/google-chrome-stable
+  # chromiumPath: /usr/bin/google-chrome-stable
+  chromiumPath: /usr/bin/chromium-browser
 database:
   type: postgres
   host: localhost
