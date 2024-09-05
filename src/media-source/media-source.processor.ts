@@ -169,7 +169,7 @@ export class MediaSourceProcessor extends WorkerHost {
           const url = this.correctUrl(item.src);
           const meidaName = url.substring(
             url.lastIndexOf('/') + 1,
-            url.indexOf('?') || undefined,
+            url.indexOf('?') >= 0 ? url.indexOf('?'): undefined,
           );
           const mediaType = meidaName.substring(meidaName.lastIndexOf('.') + 1);
           const isImage = item.tagName === 'IMG';
@@ -314,7 +314,7 @@ export class MediaSourceProcessor extends WorkerHost {
           const url = this.correctUrl(src[1]);
           const meidaName = url.substring(
             url.lastIndexOf('/') + 1,
-            url.indexOf('?') || undefined,
+            url.indexOf('?') >= 0 ? url.indexOf('?'): undefined,
           );
           const mediaType = meidaName.substring(meidaName.lastIndexOf('.') + 1);
           const isImage = img.startsWith('<img');
@@ -637,7 +637,7 @@ export class MediaSourceProcessor extends WorkerHost {
   isMediaLink(url: string) {
     const fileName = url.substring(
       url.lastIndexOf('/'),
-      url.indexOf('?') || undefined,
+      url.indexOf('?') >= 0 ? url.indexOf('?'): undefined,
     );
     const fileExt = fileName.substring(fileName.lastIndexOf('.') + 1);
     if (isEmpty(fileExt)) return true;
