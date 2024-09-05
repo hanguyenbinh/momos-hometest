@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { MediaSourceService } from './media-source.service';
 import { CreateMediaSourceDto } from 'src/dtos/create-media-source.dto';
 import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
@@ -46,6 +54,13 @@ export class MediaSourceController {
       page,
       limit,
     });
+  }
+
+  @Get('/create-media-resource-status/:code')
+  async getCreateMediaResourceStatus(
+    @Param('code', new ParseUUIDPipe({ version: '4' })) code: string,
+  ) {
+    return this.service.getCreateMediaResourceStatus(code);
   }
 
   @Get('/images')
